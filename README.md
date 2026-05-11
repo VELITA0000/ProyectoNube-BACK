@@ -1,1 +1,1 @@
-# ProyectoNube-BACK
+# API - Backend (Express + TypeScript)
