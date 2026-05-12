@@ -1,0 +1,44 @@
+{
+  "name": "photography-api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node --import tsx src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "bundle:lambda": "node scripts/bundle-lambda.mjs",
+    "smoke": "node scripts/smoke-health.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.758.0",
+    "@aws-sdk/client-s3": "^3.758.0",
+    "@aws-sdk/client-sns": "^3.758.0",
+    "@aws-sdk/client-sqs": "^3.758.0",
+    "@aws-sdk/s3-request-presigner": "^3.758.0",
+    "@codegenie/serverless-express": "^4.15.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jose": "^5.10.0",
+    "pg": "^8.13.1",
+    "stripe": "^17.5.0",
+    "uuid": "^11.0.5",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.4",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.13.5",
+    "@types/pg": "^8.11.11",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.39.4",
+    "globals": "^15.15.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.59.2"
+  }
+}
