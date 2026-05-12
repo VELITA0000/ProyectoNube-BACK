@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.lambda-build/
+.env
+.env.local
+.env.*.local
+
+*.log
+npm-debug.log*
+
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
