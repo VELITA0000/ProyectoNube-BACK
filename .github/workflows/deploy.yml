@@ -1,0 +1,79 @@
+name: API Deploy (Lambda)
+
+# Bundles the Express app with esbuild and ships it to the existing API Lambda
+# created by INFRA/. Mirrors `API/update.sh`. Runs on every push to `main`
+# (after CI passes) and on manual dispatch.
+#
+# Required SECRETS (Settings → Secrets → Actions):
+#   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_SESSION_TOKEN
+#       AWS Academy lab credentials. AWS_SESSION_TOKEN is required because
+#       Academy issues short-lived STS tokens; rotate every 4 hours.
+#
+# Required VARIABLES (Settings → Variables → Actions):
+#   AWS_REGION                  e.g. us-east-1
+#   API_LAMBDA_FUNCTION_NAME    defaults to photo-app-prod-api in INFRA;
+#                               override only if you renamed it.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: api-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: bundle + aws lambda update-function-code
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Lambda bundle (esbuild)
+        run: npm run bundle:lambda
+
+      # The bundle is a single index.js file. Native `zip` is preinstalled on
+      # ubuntu-latest, so no platform-detection logic is needed (unlike the
+      # local create.sh which has to support Git Bash on Windows).
+      - name: Package function.zip
+        working-directory: .lambda-build
+        run: zip -q function.zip index.js
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: aws lambda update-function-code
+        env:
+          API_LAMBDA_FUNCTION_NAME: ${{ vars.API_LAMBDA_FUNCTION_NAME || 'photo-app-prod-api' }}
+        run: |
+          aws lambda update-function-code \
+            --function-name "$API_LAMBDA_FUNCTION_NAME" \
+            --zip-file fileb://.lambda-build/function.zip \
+            --no-cli-pager
+
+      - name: Wait for Lambda update to finish
+        env:
+          API_LAMBDA_FUNCTION_NAME: ${{ vars.API_LAMBDA_FUNCTION_NAME || 'photo-app-prod-api' }}
+        run: aws lambda wait function-updated --function-name "$API_LAMBDA_FUNCTION_NAME"
