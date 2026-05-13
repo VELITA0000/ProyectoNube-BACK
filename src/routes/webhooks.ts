@@ -3,6 +3,7 @@ import Stripe from "stripe";
 import { getEnv } from "../config/env.js";
 import { getPool } from "../db/pool.js";
 import { publishTransactionNotification } from "../notifications/sns.js";
+import { emitEmfCount } from "../observability/emf.js";
 
 async function loadPurchaseSummary(clientId: string, purchaseIds: string[]) {
   if (!clientId || purchaseIds.length === 0) {
@@ -30,6 +31,11 @@ export async function stripeWebhookHandler(req: Request, res: Response, next: Ne
     }
     const stripe = new Stripe(env.STRIPE_SECRET_KEY);
     const sig = req.headers["stripe-signature"];
+    try {
+      emitEmfCount({ StripeWebhookIngressCount: 1 }, { Service: "api", Endpoint: "stripe-webhook" });
+    } catch {
+      /* métrica best-effort */
+    }
     if (!sig || !Buffer.isBuffer(req.body)) {
       return res.status(400).send("Missing signature or body");
     }

@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import { getEnv } from "./config/env.js";
 import { sendError } from "./http/errors.js";
+import { emitEmfCount } from "./observability/emf.js";
+import { requestCountMetricsMiddleware } from "./middleware/requestMetrics.js";
 import { authRouter } from "./routes/auth.js";
 import { portfoliosRouter } from "./routes/portfolios.js";
 import { photosRouter } from "./routes/photos.js";
@@ -16,7 +18,14 @@ import { stripeWebhookHandler } from "./routes/webhooks.js";
 export function createApp(): express.Express {
   const app = express();
 
+  app.use(requestCountMetricsMiddleware);
+
   app.get("/health", (_req, res) => {
+    try {
+      emitEmfCount({ HealthCheckCount: 1 }, { Service: "api", Endpoint: "health" });
+    } catch {
+      /* seguir sirviendo health aunque falle el log EMF */
+    }
     res.json({ ok: true });
   });
 
